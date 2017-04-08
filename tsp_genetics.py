@@ -1,5 +1,6 @@
 import math
 import random
+import numpy as np
 from math import radians, cos, sin, asin, sqrt
 
 cities = []
@@ -89,9 +90,53 @@ class Population:
 		for i in range(0,len(self.population)):
 			print_path(self.population[i])
 	
-#def crossover(dna):
+
+# order crossover used
+def crossover(dna1,dna2):
+	child1 = dna1
+	child2 = dna2
+	# choosing two crossover points randomly
+	start = int(random.random()*len(dna1))
+	end = int(random.random()*len(dna2))
+
+	print start, " ",end
+
+	vis = np.zeros(len(dna1))
+	for i in range(start,end+1):    # copying the substring from first parent to first child
+		child1[i] = dna1[i]
+		vis[dna1[i]] = 1
+	ini = end+1
+	for i in range(end+1,len(dna2)):
+		if(vis[dna2[i]]==0):
+			child1[ini] = dna2[i]
+			ini = (ini+1)%len(dna2)
+			vis[dna2[i]] = 1
+	for i in range(0,end+1):
+		if(vis[dna2[i]]==0):
+			child1[ini] = dna2[i]
+			ini = (ini+1)%len(dna2)
+			vis[dna2[i]] = 1
 
 
+	vis = np.zeros(len(dna1))
+	for i in range(start,end+1):    # copying the substring from first parent to first child
+		child2[i] = dna2[i]
+		vis[dna2[i]] = 1
+	ini = end+1
+	for i in range(end+1,len(dna1)):
+		if(vis[dna1[i]]==0):
+			child2[ini] = dna1[i]
+			ini = (ini+1)%len(dna1)
+			vis[dna1[i]] = 1
+	for i in range(0,end+1):
+		if(vis[dna1[i]]==0):
+			child2[ini] = dna1[i]
+			ini = (ini+1)%len(dna1)
+			vis[dna1[i]] = 1
+
+	return child1,child2
+
+# swap mutation method is used
 def mutation(path):
 	chance = 30
 	for pos1 in range(0,len(path)):
@@ -178,12 +223,15 @@ if __name__ == '__main__':
 		print ""'''
 
 	print "Testing Crossover :"
-	for i in range(0,len(pop.population)):
-		pp = pop.population[i]
-		print_path(pp)
-		pp = mutation(pp)
-		print_path(pp)
-		print ""
+	pp = pop.population[0]
+	pp2 = pop.population[1]
+	print_path(pp)
+	print_path(pp2)
+	print ""
+	pp,pp2 = crossover(pp,pp2)
+	print_path(pp)
+	print_path(pp2)
+	
 
 
 
