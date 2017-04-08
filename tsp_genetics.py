@@ -6,7 +6,8 @@ from math import radians, cos, sin, asin, sqrt
 cities = []
 city_to_index = {}
 
-POP_SIZE = 10
+POP_SIZE = 200
+NUM_OF_GEN = 100000
 
 # to calculate distance from geometrical coordinates
 def haversine(lat1, lat2, lon1, lon2):
@@ -18,6 +19,17 @@ def haversine(lat1, lat2, lon1, lon2):
     c = 2 * asin(sqrt(a)) 
     km = 6367 * c
     return km
+
+
+def selection_by_roulette_wheel(pop):
+	wt_sum = sum((ind[1] for ind in pop))
+	n = random.uniform(0,wt_sum)
+	su = 0
+	for ind,wt in pop:
+		su = su + wt
+		if(n<su):
+			return ind
+	return ind
 
 
 class City:
@@ -99,31 +111,36 @@ def crossover(dna1,dna2):
 	start = int(random.random()*len(dna1))
 	end = int(random.random()*len(dna2))
 
-	print start, " ",end
+	#print len(dna1)," -- ",len(dna2)
 
-	vis = np.zeros(len(dna1))
+	vis = np.zeros(len(dna1)+10)
 	for i in range(start,end+1):    # copying the substring from first parent to first child
 		child1[i] = dna1[i]
 		vis[dna1[i]] = 1
-	ini = end+1
-	for i in range(end+1,len(dna2)):
+	ini = (end+1)%len(dna1)
+	for i in range(end+1,len(dna2)):   # copying the unused elements from second parent to first child
 		if(vis[dna2[i]]==0):
 			child1[ini] = dna2[i]
+			#print "entere ",ini
 			ini = (ini+1)%len(dna2)
+			#print "exit ",ini
 			vis[dna2[i]] = 1
+
 	for i in range(0,end+1):
 		if(vis[dna2[i]]==0):
 			child1[ini] = dna2[i]
+			#print "entere2 ",ini
 			ini = (ini+1)%len(dna2)
+			#print "exit2 ",ini
 			vis[dna2[i]] = 1
 
 
-	vis = np.zeros(len(dna1))
-	for i in range(start,end+1):    # copying the substring from first parent to first child
+	vis = np.zeros(len(dna1)+10)
+	for i in range(start,end+1):    # copying the substring from second parent to second child
 		child2[i] = dna2[i]
 		vis[dna2[i]] = 1
-	ini = end+1
-	for i in range(end+1,len(dna1)):
+	ini = (end+1)%len(dna1)
+	for i in range(end+1,len(dna1)):    # copying the unused elements from first parent to second child
 		if(vis[dna1[i]]==0):
 			child2[ini] = dna1[i]
 			ini = (ini+1)%len(dna1)
@@ -136,12 +153,13 @@ def crossover(dna1,dna2):
 
 	return child1,child2
 
+
 # swap mutation method is used
 def mutation(path):
 	chance = 30
 	for pos1 in range(0,len(path)):
 		if int(random.random()*chance)==1:
-			print "yy"
+			#print "yy"
 			pos2 = (int)(len(path)*random.random())  # getting second randome position in path 
 			
 			temp = path[pos1]
@@ -151,9 +169,23 @@ def mutation(path):
 	return path
 
 
-def fitness(tour):
-	return tour.getDistance()
-	
+def fitness(path):
+		su = 0
+		l1 = len(path)
+		for i in range(1,l1):
+			c1 = cities[path[i]]
+			c2 = cities[path[i-1]]
+			c1x,c1y = c1.getCoordinates()
+			c2x,c2y = c2.getCoordinates()
+			su = su + haversine(c1x,c2x,c1y,c2y)
+
+		c1 = cities[path[len(path)-1]]
+		c2 = cities[path[0]]
+		c1x,c1y = c1.getCoordinates()
+		c2x,c2y = c2.getCoordinates()
+		su = su + haversine(c1x,c2x,c1y,c2y)
+		return su
+
 
 def print_tour(tour):
 	for i in range(0,len(tour.path)):
@@ -222,7 +254,7 @@ if __name__ == '__main__':
 		print_path(pp)
 		print ""'''
 
-	print "Testing Crossover :"
+	'''print "Testing Crossover :"
 	pp = pop.population[0]
 	pp2 = pop.population[1]
 	print_path(pp)
@@ -230,10 +262,54 @@ if __name__ == '__main__':
 	print ""
 	pp,pp2 = crossover(pp,pp2)
 	print_path(pp)
-	print_path(pp2)
+	print_path(pp2)'''
 	
 
-
-
 	print "Iterating over the generations :"
+
+	for generation in xrange(NUM_OF_GEN):               # iteration over generations
+		weighted_pop = []         # population along with their fitness
+		print "Generation ",generation
+       
+       	for individual in pop.population:
+       		value = fitness(individual)
+       		if value == 0:
+       			pair = (individual, 1.0)
+       		elif value<0:
+       			pair = (individual,(-1)*value)	
+       		else:
+       			pair = (individual,1/float(value))
+
+			weighted_pop.append(pair)
+
+		popu = []
+
+		for i in xrange(POP_SIZE/2):
+
+			# selection of two random individuals using any selection algorithm
+			ind1 = selection_by_roulette_wheel(weighted_pop)
+			ind2 = selection_by_roulette_wheel(weighted_pop)
+
+			# Crossover of the obtained individuals
+			ind1, ind2 = crossover(ind1, ind2)
+
+			# Mutate and add back into the population.
+			popu.append(mutation(ind1))
+			popu.append(mutation(ind2))
+
+		pop.population = popu
+
+
+	#Now find out the most optimal string among the remaining individuals in the population
+	fittest_string = pop.population[0]
+	minimum_fitness = fitness(pop.population[0])
+
+	for individual in pop.population:
+		ind_fitness = fitness(individual)
+		if ind_fitness <= minimum_fitness:
+			fittest_string = individual
+			minimum_fitness = ind_fitness
+
+	print "Optimal value of the given function: %d" % minimum_fitness 
+	print "Optimal value is at : %s" % print_path(fittest_string)
 
