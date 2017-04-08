@@ -3,6 +3,9 @@ import random
 from math import radians, cos, sin, asin, sqrt
 
 cities = []
+city_to_index = {}
+
+POP_SIZE = 10
 
 # to calculate distance from geometrical coordinates
 def haversine(lat1, lat2, lon1, lon2):
@@ -71,13 +74,52 @@ class Tour:
 		c2x,c2y = c2.getCoordinates()
 		su = su + haversine(c1x,c2x,c1y,c2y)
 		return su
+
+
+class Population:
+
+	def __init__(self):
+		self.population = []
+
+	def save_path(self,path):
+		#print_path(path)
+		self.population.append(path)
+
+	def print_population(self):
+		for i in range(0,len(self.population)):
+			print_path(self.population[i])
 	
 #def crossover(dna):
 
 
-#def mutation(dna):
+def mutation(path):
+	chance = 30
+	for pos1 in range(0,len(path)):
+		if int(random.random()*chance)==1:
+			print "yy"
+			pos2 = (int)(len(path)*random.random())  # getting second randome position in path 
+			
+			temp = path[pos1]
+			path[pos1] = path[pos2]
+			path[pos2] = temp
+
+	return path
+
+
+def fitness(tour):
+	return tour.getDistance()
 	
-	
+
+def print_tour(tour):
+	for i in range(0,len(tour.path)):
+		print tour.path[i],
+	print ""
+
+def print_path(path):
+	for i in range(0,len(path)):
+		print path[i],
+	print " "
+
 	
 if __name__ == '__main__':
 	
@@ -97,6 +139,7 @@ if __name__ == '__main__':
 			city = City(ind,float(coord[0]),float(coord[1]))
 			cities.append(city)
 			initial.append(ind)
+			city_to_index[city] = ind
 			ind  = ind + 1
 
 	print "length of cities : ",len(cities)
@@ -112,6 +155,37 @@ if __name__ == '__main__':
 	tour = Tour(initial)
 	print "Total distance for the current tour : ",tour.getDistance()
 
+	pop = Population()
+
+	for i in range(0,POP_SIZE):
+		temp = []
+		for j in range(0,len(tour.path)):
+			temp.append(tour.path[j])
+		random.shuffle(temp)
+		pop.save_path(temp)
+
+	print "Size of population is :",len(pop.population)
+
+	print "Population individuals are :"
+	pop.print_population()
+
+	'''print "Testing mutation :"
+	for i in range(0,len(pop.population)):
+		pp = pop.population[i]
+		print_path(pp)
+		pp = mutation(pp)
+		print_path(pp)
+		print ""'''
+
+	print "Testing Crossover :"
+	for i in range(0,len(pop.population)):
+		pp = pop.population[i]
+		print_path(pp)
+		pp = mutation(pp)
+		print_path(pp)
+		print ""
+
+
 
 	print "Iterating over the generations :"
-	
+
