@@ -6,13 +6,12 @@ from math import radians, cos, sin, asin, sqrt
 cities = []
 city_to_index = {}
 
-POP_SIZE = 200
-NUM_OF_GEN = 100000
+POP_SIZE = 50
+NUM_OF_GEN = 1000
 
 # to calculate distance from geometrical coordinates
 def haversine(lat1, lat2, lon1, lon2):
     lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-    # haversine formula 
     dlon = lon2 - lon1 
     dlat = lat2 - lat1 
     a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
@@ -31,6 +30,22 @@ def selection_by_roulette_wheel(pop):
 			return ind
 	return ind
 
+'''
+def tournamentSelection(pop):
+	tournament_size = 5
+
+	fittest = []
+	maxi = 99999
+
+	for i in range(0,tournament_size):
+		ind = (int)(random.random()*len(pop))
+	#	print ind
+		if(pop[ind][1]<maxi):
+			maxi = pop[ind][1]
+			fittest = pop[ind][0]
+
+	return fittest'''
+
 
 class City:
 	x = 0.0     # x coordinate 
@@ -38,15 +53,8 @@ class City:
 	index = 0
 	
 	def __init__(self,index,x=None,y=None):
-		if(x==None):
-			self.x = random.random()*100	
-		else:
-			self.x = x
-		if(y==None):
-			self.y = random.random()*100	
-		else:
-			self.y = y
-
+		self.x = x
+		self.y = y
 		self.index = index
 			
 	def getIndex(self):
@@ -55,53 +63,6 @@ class City:
 	def getCoordinates(self):
 		return self.x,self.y
 		
-	def distanceTo(self,city):	
-		x1,y1 = self.getCoordinates()
-		x2,y2 = city.getCoordinates()
-		xdiff = (int)(abs(x1-x2))
-		ydiff = (int)(abs(y1-y2))
-		return sqrt(xdiff*xdiff + ydiff*ydiff)
-	
-	
-class Tour:
-	path = []
-	distance = 0
-
-	def __init__(self,path):
-		self.path = path
-	
-	# to calculate the tsp distance of the current tour
-	def getDistance(self):
-		su = 0
-		l1 = len(self.path)
-		for i in range(1,l1):
-			c1 = cities[self.path[i]]
-			c2 = cities[self.path[i-1]]
-			c1x,c1y = c1.getCoordinates()
-			c2x,c2y = c2.getCoordinates()
-			su = su + haversine(c1x,c2x,c1y,c2y)
-
-		c1 = cities[self.path[len(self.path)-1]]
-		c2 = cities[self.path[0]]
-		c1x,c1y = c1.getCoordinates()
-		c2x,c2y = c2.getCoordinates()
-		su = su + haversine(c1x,c2x,c1y,c2y)
-		return su
-
-
-class Population:
-
-	def __init__(self):
-		self.population = []
-
-	def save_path(self,path):
-		#print_path(path)
-		self.population.append(path)
-
-	def print_population(self):
-		for i in range(0,len(self.population)):
-			print_path(self.population[i])
-	
 
 # order crossover used
 def crossover(dna1,dna2):
@@ -156,10 +117,9 @@ def crossover(dna1,dna2):
 
 # swap mutation method is used
 def mutation(path):
-	chance = 30
+	chance = 9
 	for pos1 in range(0,len(path)):
 		if int(random.random()*chance)==1:
-			#print "yy"
 			pos2 = (int)(len(path)*random.random())  # getting second randome position in path 
 			
 			temp = path[pos1]
@@ -170,32 +130,32 @@ def mutation(path):
 
 
 def fitness(path):
-		su = 0
-		l1 = len(path)
-		for i in range(1,l1):
-			c1 = cities[path[i]]
-			c2 = cities[path[i-1]]
-			c1x,c1y = c1.getCoordinates()
-			c2x,c2y = c2.getCoordinates()
-			su = su + haversine(c1x,c2x,c1y,c2y)
-
-		c1 = cities[path[len(path)-1]]
-		c2 = cities[path[0]]
+	su = 0
+	l1 = len(path)
+	for i in range(1,l1):
+		c1 = cities[path[i]]
+		c2 = cities[path[i-1]]
 		c1x,c1y = c1.getCoordinates()
 		c2x,c2y = c2.getCoordinates()
 		su = su + haversine(c1x,c2x,c1y,c2y)
-		return su
 
+	c1 = cities[path[len(path)-1]]
+	c2 = cities[path[0]]
+	c1x,c1y = c1.getCoordinates()
+	c2x,c2y = c2.getCoordinates()
+	su = su + haversine(c1x,c2x,c1y,c2y)
+	return su
 
-def print_tour(tour):
-	for i in range(0,len(tour.path)):
-		print tour.path[i],
-	print ""
 
 def print_path(path):
 	for i in range(0,len(path)):
 		print path[i],
-	print " "
+	print fitness(path)," "
+	
+	
+def print_population(pop):
+	for i in range(0,len(pop)):
+		print_path(pop[i])
 
 	
 if __name__ == '__main__':
@@ -207,63 +167,26 @@ if __name__ == '__main__':
 	initial = []    # initial dna (encoded using permutation representation) 
 
 	# creating the cities
-	with open("burma14.txt") as input_file:
+	with open("burma14.txt") as input_file:        # reading the datasetfile "burma14" whose optimal value is : 3323 
 		for line in input_file:
 			line = line.strip()
 			coord =  line.split()
-			#print len(coord),#" ",coord[1]
-
 			city = City(ind,float(coord[0]),float(coord[1]))
 			cities.append(city)
 			initial.append(ind)
 			city_to_index[city] = ind
 			ind  = ind + 1
 
-	print "length of cities : ",len(cities)
+	curr_pop = []
+	print "Length of initial path",fitness(initial)
 
-	# printing the cities along with coordinates
-	for i in range(0,len(cities)):
-		ind  = cities[i].getIndex()
-		cx,cy = cities[i].getCoordinates()
-		print ind,"--> ",cx," ",cy
-
-	print "\n"
-
-	tour = Tour(initial)
-	print "Total distance for the current tour : ",tour.getDistance()
-
-	pop = Population()
-
-	for i in range(0,POP_SIZE):
+	for i in range(0,POP_SIZE):           # generation of random population
 		temp = []
-		for j in range(0,len(tour.path)):
-			temp.append(tour.path[j])
+		for j in range(0,len(initial)):
+			temp.append(initial[j])
 		random.shuffle(temp)
-		pop.save_path(temp)
+		curr_pop.append(temp)
 
-	print "Size of population is :",len(pop.population)
-
-	print "Population individuals are :"
-	pop.print_population()
-
-	'''print "Testing mutation :"
-	for i in range(0,len(pop.population)):
-		pp = pop.population[i]
-		print_path(pp)
-		pp = mutation(pp)
-		print_path(pp)
-		print ""'''
-
-	'''print "Testing Crossover :"
-	pp = pop.population[0]
-	pp2 = pop.population[1]
-	print_path(pp)
-	print_path(pp2)
-	print ""
-	pp,pp2 = crossover(pp,pp2)
-	print_path(pp)
-	print_path(pp2)'''
-	
 
 	print "Iterating over the generations :"
 
@@ -271,21 +194,14 @@ if __name__ == '__main__':
 		weighted_pop = []         # population along with their fitness
 		print "Generation ",generation
        
-       	for individual in pop.population:
-       		value = fitness(individual)
-       		if value == 0:
-       			pair = (individual, 1.0)
-       		elif value<0:
-       			pair = (individual,(-1)*value)	
-       		else:
-       			pair = (individual,1/float(value))
-
-			weighted_pop.append(pair)
+	       	for individual in curr_pop:
+	       		value = fitness(individual)
+	       		pair = (individual,1/float(value))
+	       		weighted_pop.append(pair)
 
 		popu = []
 
 		for i in xrange(POP_SIZE/2):
-
 			# selection of two random individuals using any selection algorithm
 			ind1 = selection_by_roulette_wheel(weighted_pop)
 			ind2 = selection_by_roulette_wheel(weighted_pop)
@@ -296,20 +212,21 @@ if __name__ == '__main__':
 			# Mutate and add back into the population.
 			popu.append(mutation(ind1))
 			popu.append(mutation(ind2))
-
-		pop.population = popu
+			
+		curr_pop = popu
 
 
 	#Now find out the most optimal string among the remaining individuals in the population
-	fittest_string = pop.population[0]
-	minimum_fitness = fitness(pop.population[0])
+	fittest_string = curr_pop[0]
+	minimum_fitness = fitness(curr_pop[0])
 
-	for individual in pop.population:
+	for individual in curr_pop:
 		ind_fitness = fitness(individual)
+		print "^^ ",ind_fitness
 		if ind_fitness <= minimum_fitness:
 			fittest_string = individual
 			minimum_fitness = ind_fitness
 
 	print "Optimal value of the given function: %d" % minimum_fitness 
-	print "Optimal value is at : %s" % print_path(fittest_string)
-
+	print "Optimal value is at : ",
+	print_path(fittest_string)
